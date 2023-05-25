@@ -36,5 +36,6 @@ export const PrismaTenancyReqScopeClientProvider = {
       imports: [PrismaModule],
       inject: [PrismaService, REQUEST],
       useFactory,
-      scope: Scope.REQUEST
+      scope: Scope.REQUEST,
+      durable: true
 };
