@@ -18,37 +18,6 @@
 
 #
 
-If you take a look at the backend Prisma Tenancy Service implementation, you'll see that the useFactory functions for the Bypass and Tenant Providers and the constructor of the Prisma Tenancy Service have console.log statements, to indicate when they are executed / instantiated.
-
-- [tenant.ts](apps/backend/src/prisma-tenancy/client-extensions/tenant.ts)
-- [bypass.ts](apps/backend/src/prisma-tenancy/client-extensions/bypass.ts)
-- [prisma-tenancy.service.ts](apps/backend/src/prisma-tenancy/prisma-tenancy.service.ts)
-
-When and where those console.logs appear in the backend logs depends on how the Providers are scoped (and therefore will vary depending on which branch you have checked out)
-
-For each branch, you should see `Bypass Client useFactory called` along with the usual NestJS initialization log output, since that provider is not request scoped (it doesn't need to know the tenancy of the connecting user).
-
-The `main` and `durable` branches will output the following to the backend logs when a user logs in or Patients data is requested:
-
-```console
-Tenant Client useFactory called
-PrismaTenancyService constructer executed
-```
-
-For the `main` branch (request scoped provider), the above should appear in the logs for every request.
-
-For the `durable` branch, (durable request scoped provider, based on tenant id), you should see the above only once for each connecting tenant.
-
-With the `async-hooks` branch, you should see the following along with the usual NestJS initialization output. There should be no additional log output for each request:
-
-```console
-Tenant Client useFactory called
-Bypass Client useFactory called
-PrismaTenancyService constructer executed
-```
-
-#
-
 ## Initial Setup
 
 (make sure ports 5432 and 80 are free and docker is running)
@@ -126,6 +95,37 @@ export default defineConfig({
 The `50` value for `repeatEach` and `worker` means the test (there's only one) runs 50 times in parallel. The test simply authenticates with the backend using a randomly chosen tenant/user and checks the validity of the Patients json returned by GET `http://localhost/nest/patients`.
 
 #
+
+## Notes on branches and backend log output
+
+If you take a look at the backend Prisma Tenancy Service implementation, you'll see that the useFactory functions for the Bypass and Tenant Providers and the constructor of the Prisma Tenancy Service have console.log statements, to indicate when they are executed / instantiated.
+
+- [tenant.ts](apps/backend/src/prisma-tenancy/client-extensions/tenant.ts)
+- [bypass.ts](apps/backend/src/prisma-tenancy/client-extensions/bypass.ts)
+- [prisma-tenancy.service.ts](apps/backend/src/prisma-tenancy/prisma-tenancy.service.ts)
+
+When and where those console.logs appear in the backend logs depends on how the Providers are scoped (and therefore will vary depending on which branch you have checked out)
+
+For each branch, you should see `Bypass Client useFactory called` along with the usual NestJS initialization log output, since that provider is not request scoped (it doesn't need to know the tenancy of the connecting user).
+
+The `main` and `durable` branches will output the following to the backend logs when a user logs in or Patients data is requested:
+
+```console
+Tenant Client useFactory called
+PrismaTenancyService constructer executed
+```
+
+For the `main` branch (request scoped provider), the above should appear in the logs for every request.
+
+For the `durable` branch, (durable request scoped provider, based on tenant id), you should see the above only once for each connecting tenant.
+
+With the `async-hooks` branch, you should see the following along with the usual NestJS initialization output. There should be no additional log output for each request:
+
+```console
+Tenant Client useFactory called
+Bypass Client useFactory called
+PrismaTenancyService constructer executed
+```
 
 ## Docker Notes
 
