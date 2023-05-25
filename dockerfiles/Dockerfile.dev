@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1.5.2
+
+FROM custom-node:latest AS builder
+WORKDIR /app
+ARG APP
+
+COPY . .
+
+## see https://turbo.build/repo/docs/reference/command-line-reference#turbo-prune---scopetarget
+RUN turbo prune --scope=$APP --docker
+
+FROM custom-node:latest AS installer
+WORKDIR /app
+ARG APP
+
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/yarn.lock ./yarn.lock
+
+RUN \
+    --mount=type=cache,target=/usr/local/share/.cache/yarn/v6,sharing=locked \
+    yarn --prefer-offline --frozen-lockfile
+
+COPY --from=builder /app/out/full/ .
+COPY turbo.json turbo.json
+
+## --filter=frontend^... means all of frontend's dependencies will be built, but not the frontend app itself (which we don't need to do for dev environment)
+RUN turbo run build --no-cache --filter=${APP}^...
+
+
+# re-running yarn is necessary to catch changes to deps between workspaces
+RUN \
+    --mount=type=cache,target=/usr/local/share/.cache/yarn/v6,sharing=locked \
+    yarn --prefer-offline --frozen-lockfile
+
+FROM node:20.2.0-alpine3.17 AS runner
+WORKDIR /app
+ARG APP
+ARG START_COMMAND=dev
+
+COPY --from=installer /app .
+
+CMD yarn workspace ${APP} ${START_COMMAND}

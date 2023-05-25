@@ -1,2 +1,175 @@
-# nestjs-prisma-postgres-tenancy
-Multi-Tenant Example App in NestJS with Prisma and Postgres. Demonstrates Req Scoped, Durable Req Scoped, and AsyncLocalStorage-based implementations
+# nestjs-postgres-tenancy-examples
+
+### [Postgres Database Info](POSTGRES.md)
+
+### [Nginx Reverse-Proxy Info](NGINX.md)
+
+### [Authentication and Session Info](AUTH.md)
+
+#
+
+## Branches
+
+#### branch **[main](https://github.com/moofoo/nestjs-postgres-tenancy-examples)** - Request scoped providers
+
+#### branch **[durable](https://github.com/moofoo/nestjs-postgres-tenancy-examples/tree/durable)** - Durable request scoped providers (scoped to tenant id)
+
+#### branch **[async-hooks](https://github.com/moofoo/nestjs-postgres-tenancy-examples/tree/async-hooks)** - Singleton providers using AsyncLocalStorage to manage session state per request
+
+#
+
+## Initial Setup
+
+(make sure ports 5432 and 80 are free and docker is running)
+
+```console
+yarn setup
+```
+
+This script performs the following:
+
+- pull node, nginx, postgres and playwright images used by app
+- create tenancy_example_network network (needs to be external to run playwright tests)
+- create tenancy_example_db_data volume
+- create custom-node:latest image (see [Dockerfile.node](dockerfiles/Dockerfile.node))
+- start database service (this creates schema and inserts test data, see [db directory](db))
+- run 'yarn' command
+- build prismaclient and session-opts packages on host (see [packages directory](packages))
+- build frontend and backend images (see [apps directory](apps))
+- stop compose project (stops db service)
+
+see [setup.sh](setup.sh)
+
+## Running
+
+```console
+docker compose up -d
+```
+
+App should then be accessible at http://localhost.
+
+Login form shows instructions for signing in as different tenants/users
+
+For example, to log in as user 2 of tenant 3:
+
+- username: **t3 user2**
+- password: **user**
+
+Admin login:
+
+- username: **t6 admin**
+- password: **admin**
+
+Once logged in you will see data from the 'Patients' table, which will be filtered as per the Postgres RLS policy.
+
+You can see Prisma Metrics json output at http://localhost/nest/stats
+
+## Tests
+
+While compose project is running,
+
+```console
+yarn test
+```
+
+see [test.sh](test.sh)
+
+This will run playwright with the following playwright.config.ts:
+
+```typescript
+import {defineConfig} from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./tests",
+  fullyParallel: true,
+  workers: 50,
+  repeatEach: 50,
+  reporter: "html",
+  use: {
+    trace: "on-first-retry",
+    bypassCSP: true,
+  },
+});
+```
+
+The `50` value for `repeatEach` and `worker` means the test (there's only one) runs 50 times in parallel. The test simply authenticates with the backend using a randomly chosen tenant/user and checks the validity of the Patients json returned by GET `http://localhost/nest/patients`.
+
+#
+
+## Docker Notes
+
+Follow these steps when adding app dependencies:
+
+#### 1 - Add the dependencies
+
+```
+yarn workspace add APP_NAME DEPENDENCY (or yarn workspace add -D ... for dev deps)
+```
+
+for example,
+
+```
+yarn workspace backend add bcrypt
+```
+
+#### 2 - Stop/Remove/Build the service where dependencies change
+
+```
+docker compose rm -s -f backend && docker compose build backend
+```
+
+#### 3 - Restart the proxy service (explained below) and re-up
+
+```
+docker compose kill proxy && docker compose up -d
+```
+
+As unintuitive as the above may seem, removing the service before building the container reliably updates `node_modules` dependencies correctly while (apparently) not touching the build cache. In other words, this method is **much** **much** faster than running `docker compose build --no-cache`, while also dealing with the annoying dependency issues that normally necessitate the usage of `--no-cache` and other cache-busting flags.
+
+Sort of like a faster and more reliable version of this sequence:
+
+```console
+docker compose stop backend && docker compose up -d --build --force-recreate -V backend
+```
+
+Note that if you aren't setting static ip addresses for your services, restarting the proxy service will sometimes be necessary (if it was running while you removed/built/restarted the given service)
+
+One could make a shell script like this, to simplify things:
+
+```shell
+#!/bin/bash
+docker compose rm -s -f $1 && docker compose build $1 && docker compose kill proxy && docker compose up -d
+```
+
+### Prisma Resources
+
+- [Client Extensions](https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions)
+- [Client Extensions RLS Example](https://github.com/prisma/prisma-client-extensions/tree/main/row-level-security)
+- [Query Extension](https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions/query)
+- [Transactions and batch queries](https://www.prisma.io/docs/concepts/components/prisma-client/transactions)
+- [Raw database access](https://www.prisma.io/docs/concepts/components/prisma-client/raw-database-access#executeraw)
+
+### Postgres Resources
+
+- [Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+- [System Administration Functions (set_config)](https://www.postgresql.org/docs/8.0/functions-admin.html)
+
+### NestJS Resources
+
+- [Custom Factory Provider](https://docs.nestjs.com/fundamentals/custom-providers#factory-providers-usefactory)
+- [Recipe: AsyncLocalStorage](https://docs.nestjs.com/recipes/async-local-storage)
+- [Recipe: Prisma](https://docs.nestjs.com/recipes/prisma)
+- [nestjs-cls](https://github.com/Papooch/nestjs-cls)
+- [nestjs-prisma](https://nestjs-prisma.dev/)
+
+### NGINX
+
+- [Beginner's Guide](http://nginx.org/en/docs/beginners_guide.html)
+- [Using the Forwarded Header](https://www.nginx.com/resources/wiki/start/topics/examples/forwarded/)
+- [Full Config Example](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
+
+#
+
+#
+
+**Please be aware that this is a "toy" app meant to demonstrate the given programming concepts/techniques. It does **NOT** implement security best-practices and isn't intended to be representative of production-ready code**

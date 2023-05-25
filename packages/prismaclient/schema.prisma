@@ -1,0 +1,36 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["clientExtensions", "metrics"]
+}
+
+model Tenant {
+    id          Int     @id @default(autoincrement())
+    displayName String  @map("display_name")
+    isAdmin     Boolean @map("is_admin")
+
+    @@map("tenants")
+}
+
+model User {
+    id       Int    @id @default(autoincrement())
+    tenantId Int    @map("tenant_id")
+    userName String @map("user_name")
+    password String
+
+    @@map("users")
+}
+
+model Patient {
+    id        Int       @id @default(autoincrement())
+    tenantId  Int       @map("tenant_id")
+    firstName String?   @map("first_name")
+    lastName  String?   @map("last_name")
+    dob       DateTime?
+
+    @@map("patients")
+}

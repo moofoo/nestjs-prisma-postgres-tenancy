@@ -1,0 +1,22 @@
+{
+    "name": "prismaclient",
+    "version": "0.0.0",
+    "private": true,
+    "main": "dist/index.js",
+    "files": [
+        "src/index.ts"
+    ],
+    "scripts": {
+        "build": "npx -y rimraf dist/* && prisma generate && npx tsc",
+        "local": "npx -y rimraf dist/* && DATABASE_URL=postgresql://tenant:c7b38884e5c959ac151e4f24320c7a34@localhost:5432/app_db?schema=public prisma generate && npx tsc"
+    },
+    "dependencies": {
+        "@prisma/client": "^4.14.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.2.3",
+        "prisma": "^4.14.1",
+        "rimraf": "^5.0.1",
+        "typescript": "^5.0.4"
+    }
+}

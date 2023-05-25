@@ -1,0 +1,27 @@
+{
+  "name": "nestjs-prisma-postgres-tenancy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/moofoo/nestjs-prisma-postgres-tenancy.git",
+  "author": "moofoo <nathancookdev@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "yarn@1.22.19",
+  "devDependencies": {
+    "turbo": "^1.9.8"
+  },
+  "scripts": {    
+    "front":"yarn workspace frontend",
+    "back":"yarn workspace backend",
+    "setup": "bash setup.sh",
+    "reset-db": "bash reset-db.sh",    
+    "test":"bash test.sh",
+    "restart":"docker compose stop && docker compose up -d",
+    "build-front":"docker compose rm -s -f frontend && docker compose build frontend",
+    "build-back":"docker compose rm -s -f backend && docker compose build backend"
+  }
+}
