@@ -1,4 +1,4 @@
-# nestjs-postgres-tenancy-examples
+# nestjs-prisma-postgres-tenancy
 
 ### [Postgres Database Info](POSTGRES.md)
 
@@ -10,11 +10,11 @@
 
 ## Branches
 
-#### branch **[main](https://github.com/moofoo/nestjs-postgres-tenancy-examples)** - Request scoped providers
+#### branch **[main](https://github.com/moofoo/nestjs-prisma-postgres-tenancy)** - Request scoped providers
 
-#### branch **[durable](https://github.com/moofoo/nestjs-postgres-tenancy-examples/tree/durable)** - Durable request scoped providers (scoped to tenant id)
+#### branch **[durable](https://github.com/moofoo/nestjs-prisma-postgres-tenancy/tree/durable)** - Durable request scoped providers (scoped to tenant id)
 
-#### branch **[async-hooks](https://github.com/moofoo/nestjs-postgres-tenancy-examples/tree/async-hooks)** - Singleton providers using AsyncLocalStorage to manage session state per request
+#### branch **[async-hooks](https://github.com/moofoo/nestjs-prisma-postgres-tenancy/tree/async-hooks)** - Singleton providers using AsyncLocalStorage to manage session state per request
 
 #
 
