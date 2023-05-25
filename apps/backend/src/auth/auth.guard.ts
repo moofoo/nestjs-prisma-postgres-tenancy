@@ -2,11 +2,10 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request, Response } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
-import { SessionData } from 'session-opts';
-
+import { ClsService } from 'nestjs-cls';
 @Injectable()
 export class AuthGuard implements CanActivate {
-      constructor(private readonly reflector: Reflector) { }
+      constructor(private readonly reflector: Reflector, private readonly store: ClsService) { }
 
       public async canActivate(context: ExecutionContext): Promise<boolean> {
 
@@ -29,7 +28,7 @@ export class AuthGuard implements CanActivate {
 
       private async setHttpHeader(
             isPublic: boolean,
-            req: Request,
+            _req: Request,
             _res: Response,
             _type = 'http'
       ): Promise<boolean> {
@@ -38,9 +37,9 @@ export class AuthGuard implements CanActivate {
                   return true;
             }
 
-            const session: SessionData = req.session;
+            const session = this.store.get('session');
 
-            return !!session?.authenticated;
+            return !!session.authenticated;
       }
 
 }

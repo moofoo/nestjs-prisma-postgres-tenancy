@@ -1,16 +1,16 @@
-import { Injectable, Inject, Scope } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
-      BYPASS_REQ_SCOPE_CLIENT_TOKEN,
-      TENANCY_REQ_SCOPE_CLIENT_TOKEN,
-      ExtendedTenantReqScopeClient,
-      ExtendedBypassReqScopeClient
+      BYPASS_CLIENT_TOKEN,
+      TENANCY_CLIENT_TOKEN,
+      ExtendedTenantClient,
+      ExtendedBypassClient
 } from './client-extensions';
 
 @Injectable()
 export class PrismaTenancyService {
       constructor(
-            @Inject(TENANCY_REQ_SCOPE_CLIENT_TOKEN) private readonly tenantService: ExtendedTenantReqScopeClient,
-            @Inject(BYPASS_REQ_SCOPE_CLIENT_TOKEN) private readonly bypassService: ExtendedBypassReqScopeClient
+            @Inject(TENANCY_CLIENT_TOKEN) private readonly tenantService: ExtendedTenantClient,
+            @Inject(BYPASS_CLIENT_TOKEN) private readonly bypassService: ExtendedBypassClient
       ) {
             console.log("PrismaTenancyService constructer executed");
       }

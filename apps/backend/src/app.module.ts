@@ -7,6 +7,7 @@ import { UsersModule } from './models/users/users.module';
 import { PatientsModule } from './models/patients/patients.module';
 import { TenantsModule } from './models/tenants/tenants.module';
 import { AuthModule, AuthGuard } from '@/auth';
+import { ClsModule } from 'nestjs-cls';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { AuthModule, AuthGuard } from '@/auth';
     TenantsModule,
     PrismaTenancyModule,
     AuthModule,
-    ConfigModule.forRoot()
+    ConfigModule.forRoot(),
+    ClsModule.forRoot({ global: true })
   ],
   controllers: [AppController],
   providers: [

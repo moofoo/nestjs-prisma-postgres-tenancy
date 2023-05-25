@@ -1,20 +1,16 @@
-
-import { REQUEST } from '@nestjs/core';
-import { Request } from 'express';
-import { Scope } from '@nestjs/common';
-import { SessionData } from 'session-opts';
+import { ClsService } from 'nestjs-cls';
 import { PrismaModule, PrismaService } from 'nestjs-prisma';
+import type { SessionData } from 'session-opts';
 
-const useFactory = (prisma: PrismaService, req: Request & { session: SessionData; }) => {
+const useFactory = (prisma: PrismaService, store: ClsService) => {
       console.log('Tenant Client useFactory called');
 
       return prisma.$extends({
             query: {
                   $allModels: {
                         async $allOperations({ args, query }) {
-                              const session = (req?.session || {}) as SessionData;
-                              const tenantId = session?.tenantId || 0;
-                              const isAdmin = session?.isAdmin || false;
+                              const session: SessionData = store.get('session');
+                              const { tenantId, isAdmin } = session;
 
                               const [, result] = await prisma.$transaction([
                                     prisma.$executeRaw`SELECT set_config('tenancy.tenant_id', ${`${tenantId || 0}`}, TRUE), set_config('tenancy.bypass', ${`${isAdmin ? 1 : 0}`}, TRUE)`,
@@ -27,15 +23,13 @@ const useFactory = (prisma: PrismaService, req: Request & { session: SessionData
       });
 };
 
-export type ExtendedTenantReqScopeClient = ReturnType<typeof useFactory>;
+export type ExtendedTenantClient = ReturnType<typeof useFactory>;
 
-export const TENANCY_REQ_SCOPE_CLIENT_TOKEN = Symbol('TENANCY_REQ_SCOPE_CLIENT_TOKEN');
+export const TENANCY_CLIENT_TOKEN = Symbol('TENANCY_CLIENT_TOKEN');
 
-export const PrismaTenancyReqScopeClientProvider = {
-      provide: TENANCY_REQ_SCOPE_CLIENT_TOKEN,
+export const PrismaTenancyClientProvider = {
+      provide: TENANCY_CLIENT_TOKEN,
       imports: [PrismaModule],
-      inject: [PrismaService, REQUEST],
-      useFactory,
-      scope: Scope.REQUEST,
-      durable: true
+      inject: [PrismaService, ClsService],
+      useFactory
 };

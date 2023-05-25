@@ -2,15 +2,15 @@ import { Injectable, UnauthorizedException, InternalServerErrorException, BadReq
 import { UsersService } from '@/models/users/users.service';
 import { TenantsService } from '@/models/tenants/tenants.service';
 import { compare } from 'bcrypt';
-import { Request } from 'express';
 import { SessionData } from 'session-opts';
+import { ClsService } from 'nestjs-cls';
 
 @Injectable()
 export class AuthService {
 
-      constructor(private readonly user: UsersService, private readonly tenant: TenantsService) { }
+      constructor(private readonly user: UsersService, private readonly tenant: TenantsService, private readonly store: ClsService) { }
 
-      async login(credentials: { userName: string, password: string; }, req: Request) {
+      async login(credentials: { userName: string, password: string; }) {
 
             const { userName, password } = credentials;
 
@@ -40,7 +40,7 @@ export class AuthService {
                   throw new InternalServerErrorException('Tenant Not Found');
             }
 
-            const session: SessionData | any = req?.session || {}; //this.store.get('session');
+            const session: SessionData = this.store.get('session');
 
             session.userId = dbUser.id;
             session.tenantId = dbUser.tenantId;
@@ -56,8 +56,8 @@ export class AuthService {
             return 'ok';
       }
 
-      async logout(req: Request) {
-            const session = req.session; //this.store.get('session');
+      async logout() {
+            const session = this.store.get('session');
 
             await session.destroy();
 

@@ -19,12 +19,12 @@ const useFactory = (prisma: PrismaService) => {
       });
 };
 
-export type ExtendedBypassReqScopeClient = ReturnType<typeof useFactory>;
+export type ExtendedBypassClient = ReturnType<typeof useFactory>;
 
-export const BYPASS_REQ_SCOPE_CLIENT_TOKEN = Symbol('BYPASS_REQ_SCOPE_CLIENT_TOKEN');
+export const BYPASS_CLIENT_TOKEN = Symbol('BYPASS_CLIENT_TOKEN');
 
-export const PrismaBypassReqScopeClientProvider = {
-      provide: BYPASS_REQ_SCOPE_CLIENT_TOKEN,
+export const PrismaBypassClientProvider = {
+      provide: BYPASS_CLIENT_TOKEN,
       imports: [PrismaModule],
       inject: [PrismaService],
       useFactory,
