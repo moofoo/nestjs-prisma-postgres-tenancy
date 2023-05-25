@@ -12,7 +12,7 @@ const useFactory = (prisma: PrismaService, req: Request & { session: SessionData
             query: {
                   $allModels: {
                         async $allOperations({ args, query }) {
-                              const { session } = req;
+                              const session = (req?.session || {}) as SessionData;
                               const tenantId = session?.tenantId || 0;
                               const isAdmin = session?.isAdmin || false;
 
@@ -36,5 +36,6 @@ export const PrismaTenancyReqScopeClientProvider = {
       imports: [PrismaModule],
       inject: [PrismaService, REQUEST],
       useFactory,
-      scope: Scope.REQUEST
+      scope: Scope.REQUEST,
+      durable: true
 };
