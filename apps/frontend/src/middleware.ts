@@ -19,8 +19,6 @@ export async function middleware(req: NextRequest) {
 
         const sessionOpts = getSessionOpts();
 
-        console.log({ sessionOpts });
-
         const session: SessionData = await getIronSession(req, res, sessionOpts);
 
         if (!session.authenticated) {

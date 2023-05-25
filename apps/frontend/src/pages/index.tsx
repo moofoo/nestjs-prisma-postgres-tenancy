@@ -18,8 +18,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   const sessionOpts = getSessionOpts();
 
-  console.log({ serverSidePropsOpts: sessionOpts });
-
   const session: SessionData = await getIronSession(req, res, sessionOpts);
 
   const { userName, tenantName } = session;
