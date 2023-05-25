@@ -12,7 +12,7 @@ const useFactory = (prisma: PrismaService, req: Request & { session: SessionData
             query: {
                   $allModels: {
                         async $allOperations({ args, query }) {
-                              const { session } = req;
+                              const { session = {} as any } = req || {};
                               const tenantId = session?.tenantId || 0;
                               const isAdmin = session?.isAdmin || false;
 
