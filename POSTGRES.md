@@ -42,18 +42,7 @@ create table if not exists public.users
             on delete cascade,
     user_name varchar,
     password varchar
-);  db:
-    <<: *defaults
-    image: postgres:15.3-alpine3.17
-    ports:
-      - '5432:5432'
-    volumes:
-      - tenancy_example_db_data:/var/lib/postgresql/data
-      - type: bind
-        source: ./db
-        target: /docker-entrypoint-initdb.d
-    environment:
-      POSTGRES_PASSWORD: 07f019e661d8ca48c47bdffd255b12fe
+);
 
 create table if not exists public.patients
 (
