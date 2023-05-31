@@ -1,5 +1,7 @@
 # nestjs-prisma-postgres-tenancy
 
+Full Stack Multi-Tenant Example App in NestJS using Prisma and PostgreSQL. Demonstrates Request Scoped, Durable Request Scoped, and AsyncLocalStorage based implementations
+
 ### [Postgres Database Info](POSTGRES.md)
 
 ### [Nginx Reverse-Proxy Info](NGINX.md)
