@@ -78,12 +78,10 @@ export function LoginForm() {
                 </Paper>
 
                 <Stack ml={25}>
-                    <Group><Title order={6}>5 non-admin tenants with 2 users each (password: user)</Title> </Group>
-                    <Group><Title order={6}>1 admin tenant with a single user (password: admin)</Title> </Group>
-                    <Group><Title order={6}>Username format (non-admin): t(1-5) user(1-2)</Title> </Group>
-                    <Group><Title order={6}>Example (tenant 3 user 2): <i>t3 user2</i>, password <i>user</i></Title> </Group>
-                    <Group><Title order={6}>Example (tenant 1 user 1): <i>t1 user1</i>, password <i>user</i></Title> </Group>
-                    <Group><Title order={6}>Admin login: <i>t6 admin</i>, password <i>admin</i></Title> </Group>
+                    <Group><Title order={6}>Available logins:</Title> </Group>
+                    <Group><Title order={6}>joe:user (tenant 1)</Title> </Group>
+                    <Group><Title order={6}>bruce:user (tenant 2)</Title> </Group>
+                    <Group><Title order={6}>yeezy:user (tenant 1 and 2)</Title> </Group>
                 </Stack>
 
             </Stack>

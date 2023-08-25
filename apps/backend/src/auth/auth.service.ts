@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '@/models/users/users.service';
-import { TenantsService } from '@/models/tenants/tenants.service';
+import { UserTenantsService } from '@/models/tenant-users/user-tenants.service';
 import { compare } from 'bcrypt';
 import { Request } from 'express';
 import { SessionData } from 'session-opts';
@@ -8,7 +8,7 @@ import { SessionData } from 'session-opts';
 @Injectable()
 export class AuthService {
 
-      constructor(private readonly user: UsersService, private readonly tenant: TenantsService) { }
+      constructor(private readonly user: UsersService, private readonly userTenant: UserTenantsService) { }
 
       async login(credentials: { userName: string, password: string; }, req: Request) {
 
@@ -33,9 +33,9 @@ export class AuthService {
                   throw new UnauthorizedException('Invalid Username or Password 2');
             }
 
-            const dbTenant = await this.tenant.findUnique({ where: { id: dbUser.tenantId } }, true);
+            const dbTenants = await this.userTenant.findMany({ where: { userId: dbUser.id } }, true);
 
-            if (!dbTenant) {
+            if (!dbTenants || dbTenants?.length === 0) {
                   console.log('Tenant Not Found', credentials);
                   throw new InternalServerErrorException('Tenant Not Found');
             }
@@ -43,12 +43,11 @@ export class AuthService {
             const session: SessionData | any = req?.session || {}; //this.store.get('session');
 
             session.userId = dbUser.id;
-            session.tenantId = dbUser.tenantId;
+            session.tenantIds = dbTenants.map(tenant => tenant.tenantId);
 
             session.userName = dbUser.userName;
-            session.tenantName = dbTenant.displayName;
 
-            session.isAdmin = dbTenant.isAdmin;
+            session.isAdmin = dbUser.isAdmin;
             session.authenticated = true;
 
             await session.save();

@@ -1,12 +1,13 @@
 import {
     Controller,
     Get,
+    ParseIntPipe,
     Param,
-    ParseIntPipe
+    Scope
 } from '@nestjs/common';
 
 import { UsersService } from './users.service';
-@Controller('users')
+@Controller({ path: 'users', scope: Scope.REQUEST })
 export class UsersController {
     constructor(private readonly users: UsersService) { }
 

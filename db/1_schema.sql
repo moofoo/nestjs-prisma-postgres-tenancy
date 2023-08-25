@@ -43,19 +43,28 @@ GRANT USAGE ON SCHEMA fn TO tenant;
 create table if not exists public.tenants
 (
     id bigserial primary key,
-    display_name varchar,
-    is_admin boolean default false
+    display_name varchar  
 );
 
 create table if not exists public.users
 (
+    id bigserial primary key,    
+    user_name varchar,
+    password varchar,
+    is_admin boolean default false
+);
+
+create table if not exists public.user_tenants
+(
     id bigserial primary key,
+    user_id bigint
+        constraint users_user_id_fk
+            references public.users
+            on delete cascade,    
     tenant_id bigint
         constraint users_tenants_id_fk
             references public.tenants
-            on delete cascade,
-    user_name varchar,
-    password varchar
+            on delete cascade
 );
 
 create table if not exists public.patients
@@ -76,9 +85,30 @@ create table if not exists public.patients
 grant delete, insert, select, update on public.tenants to tenant;
 grant delete, insert, select, update on public.users to tenant;
 grant delete, insert, select, update on public.patients to tenant;
+grant delete, insert, select, update on public.user_tenants to tenant;
 
 
--- ROW LEVEL SECURITY CHECK FUNCTION  ---------------------------------
+-- UTILITY FUNCTIONS ---------------------------------
+create or replace function fn.session_user_is_tenant_member(tenant_ids bigint[]) returns boolean
+    language plpgsql
+as
+$$
+DECLARE
+    user_is_member boolean;
+BEGIN
+
+SELECT count(*) > 0 INTO user_is_member FROM public.user_tenants WHERE user_id::bigint = current_setting('tenancy.user_id')::bigint AND tenant_ids::bigint[] && current_setting('tenancy.tenant_ids')::bigint[] LIMIT 1;
+
+return user_is_member;
+
+END;
+$$;
+
+alter function fn.session_user_is_tenant_member(bigint[]) owner to postgres;
+
+
+
+-- ROW LEVEL SECURITY CHECK FUNCTIONS  ---------------------------------
 create or replace function fn.tenant_data_rls_check(row_tenant_id bigint) returns boolean
     language plpgsql
 as
@@ -88,19 +118,51 @@ BEGIN
 
 IF current_setting('tenancy.bypass')::text = '1' THEN
     return true;
-end if;
+end IF;
 
-
-IF current_setting('tenancy.tenant_id')::integer = row_tenant_id THEN
+IF fn.session_user_is_tenant_member(ARRAY [row_tenant_id]) THEN
     return true;
-end if;
+end IF;
 
 return false;
 
 END;
 $$;
 
-alter function fn.tenant_data_rls_check(bigint) owner to postgres;
+create or replace function fn.user_data_rls_check(row_user_id bigint) returns boolean
+    language plpgsql
+as
+$$
+DECLARE
+    declare zero_id bigint default 0;
+    tenant_ids bigint[];
+
+BEGIN
+
+-- allows login query to pass
+IF current_setting('tenancy.user_id')::text = '0' AND current_setting('tenancy.tenant_ids')::text = '0' AND current_setting('tenancy.bypass')::text = '1' THEN
+    return true;
+end if;
+
+-- user's own data
+IF current_setting('tenancy.user_id')::bigint = row_user_id::bigint THEN
+    return true;
+end if;
+
+tenant_ids := ARRAY(
+    SELECT tenant_id FROM public.user_tenants WHERE user_id = row_user_id
+)::bigint[];
+
+IF current_setting('tenancy.bypass')::text = '1' AND tenant_ids && current_setting('tenancy.tenant_ids')::bigint[] THEN
+    return true;
+end if;   
+
+return false;
+
+END;
+$$;
+
+alter function fn.user_data_rls_check(bigint) owner to postgres;
 
 
 -- ENABLE / DISABLE RLS ---------------------------------
@@ -148,8 +210,8 @@ create policy tenancy_policy on public.tenants
 create policy tenancy_policy on public.users
     as permissive
     for all
-    using (fn.tenant_data_rls_check(tenant_id) = true)
-    with check (fn.tenant_data_rls_check(tenant_id) = true);
+    using (fn.user_data_rls_check(id) = true)
+    with check (fn.user_data_rls_check(id) = true);
 
 create policy tenancy_policy on public.patients
     as permissive

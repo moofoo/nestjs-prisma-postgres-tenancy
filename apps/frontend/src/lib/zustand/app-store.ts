@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { combine, devtools, persist } from 'zustand/middleware';
 
-type UserInfo = { userName?: string, tenantName?: string; };
+type UserInfo = { userName?: string; };
 
 export const useAppStore = create(
     devtools(

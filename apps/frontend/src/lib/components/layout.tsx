@@ -6,7 +6,7 @@ import { shallowEqual } from '@mantine/hooks';
 import { useAppStore } from '../zustand/app-store';
 import { getFetchInstance } from '../ofetch-instance';
 
-export function Layout(props: { children: React.ReactNode, user: { userName?: string, tenantName?: string; }; }) {
+export function Layout(props: { children: React.ReactNode, user: { userName?: string; }; }) {
     const { children, user } = props;
 
     const path = usePathname();
@@ -44,7 +44,7 @@ export function Layout(props: { children: React.ReactNode, user: { userName?: st
                             <Title order={2}>Multi Tenant App </Title>
                             <Box>
                                 <Group position='right'>
-                                    <Title order={5}>Welcome, {storeUser?.userName} of {storeUser?.tenantName}</Title>
+                                    <Title order={5}>Welcome, {storeUser?.userName}</Title>
                                     <Button onClick={logout}>Logout</Button>
                                 </Group>
 

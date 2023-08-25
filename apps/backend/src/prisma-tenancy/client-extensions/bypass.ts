@@ -8,8 +8,9 @@ const useFactory = (prisma: PrismaService) => {
             query: {
                   $allModels: {
                         async $allOperations({ args, query }) {
+
                               const [, result] = await prisma.$transaction([
-                                    prisma.$executeRaw`SELECT set_config('tenancy.tenant_id', '0', TRUE), set_config('tenancy.bypass', '1', TRUE)`,
+                                    prisma.$executeRaw`SELECT set_config('tenancy.user_id', '0', TRUE), set_config('tenancy.tenant_ids', '0', TRUE), set_config('tenancy.bypass', '1', TRUE)`,
                                     query(args),
                               ]);
                               return result;

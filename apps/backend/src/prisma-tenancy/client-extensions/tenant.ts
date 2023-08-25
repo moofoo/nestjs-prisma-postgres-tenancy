@@ -13,11 +13,13 @@ const useFactory = (prisma: PrismaService, req: Request & { session: SessionData
                   $allModels: {
                         async $allOperations({ args, query }) {
                               const session = (req?.session || {}) as SessionData;
-                              const tenantId = session?.tenantId || 0;
+                              console.log({ session });
+                              const userId = session?.userId;
+                              const tenantIds = session?.tenantIds || [0];
                               const isAdmin = session?.isAdmin || false;
 
                               const [, result] = await prisma.$transaction([
-                                    prisma.$executeRaw`SELECT set_config('tenancy.tenant_id', ${`${tenantId || 0}`}, TRUE), set_config('tenancy.bypass', ${`${isAdmin ? 1 : 0}`}, TRUE)`,
+                                    prisma.$executeRaw`SELECT set_config('tenancy.user_id', ${`${userId || 0}`}, TRUE), set_config('tenancy.tenant_ids',  ${"{" + tenantIds.join(", ") + "}"}, TRUE), set_config('tenancy.bypass', ${`${isAdmin ? 1 : 0}`}, TRUE)`,
                                     query(args),
                               ]);
                               return result;

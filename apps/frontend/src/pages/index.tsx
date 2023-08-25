@@ -9,8 +9,18 @@ const PatientsTable = dynamic(() => import('@/lib/components/patients-table'), {
   loading: () => <p>Loading...</p>,
 });
 
+const UsersTable = dynamic(() => import('@/lib/components/users-table'), {
+  loading: () => <p>Loading...</p>,
+});
+
 export default function Home() {
-  return <PatientsTable />;
+  return (
+    <div>
+      <PatientsTable />
+      <br /> <br />
+      <UsersTable />
+    </div>
+  );
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -20,10 +30,10 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   const session: SessionData = await getIronSession(req, res, sessionOpts);
 
-  const { userName, tenantName } = session;
+  const { userName } = session;
 
 
   return {
-    props: { user: { userName, tenantName } }, // will be passed to the page component as props
+    props: { user: { userName } }, // will be passed to the page component as props
   };
 }
