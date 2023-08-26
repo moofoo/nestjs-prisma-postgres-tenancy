@@ -28,7 +28,6 @@ ALTER TABLE public.tenants DISABLE TRIGGER ALL;
 INSERT INTO public.tenants (id, display_name) VALUES (1, 'tenant 1');
 INSERT INTO public.tenants (id, display_name) VALUES (2, 'tenant 2');
 
-
 ALTER TABLE public.tenants ENABLE TRIGGER ALL;
 
 
@@ -40,7 +39,8 @@ ALTER TABLE public.users DISABLE TRIGGER ALL;
 
 INSERT INTO public.users (id, user_name, password, is_admin) VALUES (1, 'joe', '$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2', false);
 INSERT INTO public.users (id, user_name, password, is_admin) VALUES (2, 'bruce', '$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2', false);
-INSERT INTO public.users (id, user_name, password, is_admin) VALUES (3, 'yeezy', '$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2', true);
+INSERT INTO public.users (id, user_name, password, is_admin) VALUES (3, 'jeremy', '$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2', false);
+INSERT INTO public.users (id, user_name, password, is_admin) VALUES (4, 'yeezy', '$2b$10$YJ3paQsDvg7ykcUEB6kmQetsGcaRfPzTwvpOEQSc565epW.P82lMO', true);
 
 
 ALTER TABLE public.users ENABLE TRIGGER ALL;
@@ -55,6 +55,8 @@ INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (1, 1, 1);
 INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (2, 2, 2);
 INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (3, 1, 3);
 INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (4, 2, 3);
+INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (5, 1, 4);
+INSERT INTO public.user_tenants (id, tenant_id, user_id) VALUES (6, 2, 4);
 
 
 ALTER TABLE public.user_tenants ENABLE TRIGGER ALL;

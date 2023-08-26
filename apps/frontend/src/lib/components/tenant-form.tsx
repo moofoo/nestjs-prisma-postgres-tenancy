@@ -13,23 +13,27 @@ import { useForm } from "react-hook-form";
 import {
     PasswordInput,
     TextInput,
+    Select
 } from "react-hook-form-mantine";
 
 import { getFetchInstance } from '../ofetch-instance';
 import { useAppStore } from '../zustand/app-store';
+import { TLSSocket } from 'tls';
 
-export function LoginForm() {
+export function TenantForm(props: { userName: string; tenantNames: any; }) {
+    const { tenantNames } = props;
+    //
+    console.log({ tenantNames });
 
     const { control, handleSubmit } = useForm({
         defaultValues: {
-            userName: '',
-            password: ''
+            tenantId: ''
         }
     });
 
     const router = useRouter();
 
-    const onSubmitOk = async (data: { userName: string, password: string; }) => {
+    const onSubmitOk = async (data: { tenantId: string; }) => {
         const { setLoading } = useAppStore.getState();
         setLoading(true);
 
@@ -38,7 +42,7 @@ export function LoginForm() {
         let result = null;
 
         try {
-            result = await oFetch('auth/login', { method: 'POST', body: data });
+            result = await oFetch('auth/tenant', { method: 'POST', body: { tenantId: Number(data.tenantId) } });
         } catch (err) {
             console.error(err);
         }
@@ -58,33 +62,23 @@ export function LoginForm() {
                         )}
                     >
                         <Stack>
-                            <TextInput required name="userName" control={control} label="Username" radius="md" />
-                            <PasswordInput
-                                name="password"
+                            <Select
                                 control={control}
-                                label="Password"
-                                required
-                                placeholder="Your password"
-                                radius="md"
+                                name='tenantId'
+                                data={tenantNames}
+                                label="Select Tenant"
+                                description="tenant select"
+                                withAsterisk
                             />
                         </Stack>
 
                         <Group position="right" mt="xl">
                             <Button type="submit" radius="xl">
-                                Login
+                                Choose Tenant
                             </Button>
                         </Group>
                     </form>
                 </Paper>
-
-                <Stack ml={25}>
-                    <Group><Title order={6}>Available logins:</Title> </Group>
-                    <Group><Title order={6}>joe:user (tenant 1, non-admin)</Title> </Group>
-                    <Group><Title order={6}>bruce:user (tenant 2, non-admin)</Title> </Group>
-                    <Group><Title order={6}>jeremy:user (tenant 1 and 2, non-admin)</Title> </Group>
-                    <Group><Title order={6}>yeezy:admin (tenant 1 and 2, is admin)</Title> </Group>
-                </Stack>
-
             </Stack>
         </Center>
     );

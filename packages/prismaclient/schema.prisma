@@ -9,17 +9,19 @@ generator client {
 }
 
 model Tenant {
-    id          Int    @id @default(autoincrement())
-    displayName String @map("display_name")
+    id          Int           @id @default(autoincrement())
+    displayName String        @map("display_name")
+    UserTenants UserTenants[]
 
     @@map("tenants")
 }
 
 model User {
-    id       Int     @id @default(autoincrement())
-    userName String  @map("user_name")
-    password String
-    isAdmin  Boolean @map("is_admin")
+    id          Int           @id @default(autoincrement())
+    userName    String        @map("user_name")
+    password    String
+    isAdmin     Boolean       @map("is_admin")
+    UserTenants UserTenants[]
 
     @@map("users")
 }
@@ -28,6 +30,9 @@ model UserTenants {
     id       Int @id @default(autoincrement())
     tenantId Int @map("tenant_id")
     userId   Int @map("user_id")
+
+    User   User?   @relation(fields: [userId], references: [id])
+    Tenant Tenant? @relation(fields: [tenantId], references: [id])
 
     @@map("user_tenants")
 }

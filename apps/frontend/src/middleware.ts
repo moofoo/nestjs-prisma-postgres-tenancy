@@ -21,8 +21,15 @@ export async function middleware(req: NextRequest) {
 
         const session: SessionData = await getIronSession(req, res, sessionOpts);
 
+        console.log({ session });
+
+
         if (!session.authenticated) {
-            res = redirectCheck(req, res, '/login');
+            if (!session.userId) {
+                res = redirectCheck(req, res, '/login');
+            } else if (!session.isAdmin && !session?.tenantId) {
+                res = redirectCheck(req, res, '/tenant');
+            }
         }
     }
 

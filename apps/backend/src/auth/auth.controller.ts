@@ -22,6 +22,13 @@ export class AuthController {
         return this.auth.login(credentials, req);
     }
 
+    @Public()
+    @Post('/tenant')
+    tenantLogin(@Req() req: Request, @Body() credentials: { tenantId: number; }) {
+        return this.auth.setTenant(credentials, req);
+    }
+
+    @Public()
     @Post('/logout')
     logout(@Req() req: Request) {
         return this.auth.logout(req);

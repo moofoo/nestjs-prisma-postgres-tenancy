@@ -29,19 +29,28 @@ The two SQL files in ./db (1_schema.sql and 2_data.sql) are executed when the co
 create table if not exists public.tenants
 (
     id bigserial primary key,
-    display_name varchar,
-    is_admin boolean default false
+    display_name varchar
 );
 
 create table if not exists public.users
 (
     id bigserial primary key,
+    user_name varchar,
+    password varchar,
+    is_admin boolean default false
+);
+
+create table if not exists public.user_tenants
+(
+    id bigserial primary key,
+    user_id bigint
+        constraint users_user_id_fk
+            references public.users
+            on delete cascade,
     tenant_id bigint
         constraint users_tenants_id_fk
             references public.tenants
-            on delete cascade,
-    user_name varchar,
-    password varchar
+            on delete cascade
 );
 
 create table if not exists public.patients
@@ -55,50 +64,96 @@ create table if not exists public.patients
     last_name varchar,
     dob date
 );
+
 ```
 
-RLS function:
+RLS-related functions:
 
 ```sql
+create or replace function fn.session_user_is_tenant_member(tenant_ids bigint[]) returns boolean
+    language plpgsql
+as
+$$
+DECLARE
+    user_is_member boolean;
+BEGIN
+
+SELECT count(*) > 0 INTO user_is_member FROM public.user_tenants WHERE user_id::bigint = current_setting('tenancy.user_id')::bigint AND tenant_ids::bigint[] && current_setting('tenancy.tenant_ids')::bigint[] LIMIT 1;
+
+return user_is_member;
+
+END;
+$$;
+
+alter function fn.session_user_is_tenant_member(bigint[]) owner to postgres;
+
+-- ROW LEVEL SECURITY CHECK FUNCTIONS  ---------------------------------
 create or replace function fn.tenant_data_rls_check(row_tenant_id bigint) returns boolean
     language plpgsql
 as
 $$
+
 BEGIN
 
 IF current_setting('tenancy.bypass')::text = '1' THEN
     return true;
+end IF;
+
+IF fn.session_user_is_tenant_member(ARRAY [row_tenant_id]) THEN
+    return true;
+end IF;
+
+return false;
+
+END;
+$$;
+
+alter function fn.tenant_data_rls_check(bigint) owner to postgres;
+
+create or replace function fn.user_data_rls_check(row_user_id bigint) returns boolean
+    language plpgsql
+as
+$$
+DECLARE
+    declare zero_id bigint default 0;
+    tenant_ids bigint[];
+
+BEGIN
+
+-- allows login query to pass
+IF current_setting('tenancy.bypass')::text = '1' THEN
+    return true;
 end if;
 
-IF current_setting('tenancy.tenant_id')::integer = row_tenant_id THEN
+-- user's own data
+IF current_setting('tenancy.user_id')::bigint = row_user_id::bigint THEN
     return true;
 end if;
 
 return false;
+
 END;
 $$;
+
+alter function fn.user_data_rls_check(bigint) owner to postgres;
 ```
 
-tenant_data_rls_check takes a single argument, the value of 'tenant_id' (or 'id' for the tenants table) for the queried/mutated row.
-
-Looking at the function body, you'll see that first it checks if the session value 'tenancy.bypass' is equal to '1', and if so it returns true, allowing the operation.
-
-Next, it compares the session value 'tenancy.tenant_id' with the tenant_id value for the row. If equal, it allows the operation, otherwise the operation fails.
+#
 
 ###### Policies:
 
 ```sql
+create policy tenancy_policy on public.users
+    as permissive
+    for all
+    using (fn.user_data_rls_check(id) = true)
+    with check (fn.user_data_rls_check(id) = true);
+
 create policy tenancy_policy on public.tenants
     as permissive
     for all
     using (fn.tenant_data_rls_check(id) = true)
     with check (fn.tenant_data_rls_check(id) = true);
-
-create policy tenancy_policy on public.users
-    as permissive
-    for all
-    using (fn.tenant_data_rls_check(tenant_id) = true)
-    with check (fn.tenant_data_rls_check(tenant_id) = true);
 
 create policy tenancy_policy on public.patients
     as permissive
@@ -116,30 +171,31 @@ This SQL file populates the database with the following test data:
 ## Tenants Test Data
 
 <table border="1" style="border-collapse:collapse">
-<tr><th>id</th><th>display_name</th><th>is_admin</th></tr>
-<tr><td>1</td><td>user tenant 1</td><td>false</td></tr>
-<tr><td>2</td><td>user tenant 2</td><td>false</td></tr>
-<tr><td>3</td><td>user tenant 3</td><td>false</td></tr>
-<tr><td>4</td><td>user tenant 4</td><td>false</td></tr>
-<tr><td>5</td><td>user tenant 5</td><td>false</td></tr>
-<tr><td>6</td><td>admin tenant</td><td>true</td></tr>
+<tr><th>id</th><th>display_name</th></tr>
+<tr><td>1</td><td>tenant 1</td></tr>
+<tr><td>2</td><td>tenant 2</td></tr>
 </table>
 
 ## Users Test Data
 
 <table border="1" style="border-collapse:collapse">
-<tr><th>id</th><th>tenant_id</th><th>user_name</th><th>password</th></tr>
-<tr><td>1</td><td>1</td><td>t1 user1</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>2</td><td>1</td><td>t1 user2</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>3</td><td>2</td><td>t2 user1</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>4</td><td>2</td><td>t2 user2</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>5</td><td>3</td><td>t3 user1</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>6</td><td>3</td><td>t3 user2</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>7</td><td>4</td><td>t4 user1</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>8</td><td>4</td><td>t4 user2</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>9</td><td>5</td><td>t5 user1</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>10</td><td>5</td><td>t5 user2</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td></tr>
-<tr><td>11</td><td>6</td><td>t6 admin</td><td>$2b$10$YJ3paQsDvg7ykcUEB6kmQetsGcaRfPzTwvpOEQSc565epW.P82lMO</td></tr>
+<tr><th>id</th><th>user_name</th><th>password</th><th>is_admin</th></tr>
+<tr><td>1</td><td>joe</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td><td>false</td></tr>
+<tr><td>2</td><td>bruce</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td><td>false</td></tr>
+<tr><td>3</td><td>jeremy</td><td>$2b$10$gra37ECOljK.6udDxfwAOOTSyeQSbo9I0zS6l6NoMR1mbE.9T.jF2</td><td>false</td></tr>
+<tr><td>4</td><td>yeezy</td><td>$2b$10$YJ3paQsDvg7ykcUEB6kmQetsGcaRfPzTwvpOEQSc565epW.P82lMO</td><td>true</td></tr>
+</table>
+
+## User Tenants Test Data
+
+<table border="1" style="border-collapse:collapse">
+<tr><th>id</th><th>user_id</th><th>tenant_id</th></tr>
+<tr><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>2</td><td>2</td><td>2</td></tr>
+<tr><td>3</td><td>3</td><td>1</td></tr>
+<tr><td>4</td><td>3</td><td>2</td></tr>
+<tr><td>5</td><td>4</td><td>1</td></tr>
+<tr><td>6</td><td>4</td><td>2</td></tr>
 </table>
 
 ## Patients Test Data
@@ -151,24 +207,9 @@ This SQL file populates the database with the following test data:
 <tr><td>3</td><td>1</td><td>Bob</td><td>Doe</td><td>1992-05-13</td></tr>
 <tr><td>4</td><td>1</td><td>Jerry</td><td>Doe</td><td>1984-02-11</td></tr>
 <tr><td>5</td><td>1</td><td>Fran</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>6</td><td>2</td><td>John</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>7</td><td>2</td><td>James</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>8</td><td>2</td><td>Josh</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>9</td><td>2</td><td>Harry</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>10</td><td>2</td><td>Mary</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>11</td><td>3</td><td>John</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>12</td><td>3</td><td>Jeoffrey</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>13</td><td>3</td><td>Max</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>14</td><td>3</td><td>Min</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>15</td><td>3</td><td>Patronius</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>16</td><td>4</td><td>John</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>17</td><td>4</td><td>Jane</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>18</td><td>4</td><td>Homer</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>19</td><td>4</td><td>Maggie</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>20</td><td>4</td><td>Bart</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>21</td><td>5</td><td>John</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>22</td><td>5</td><td>Walker</td><td>Doe</td><td>1992-05-13</td></tr>
-<tr><td>23</td><td>5</td><td>Yeezy</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>24</td><td>5</td><td>Puff Daddy</td><td>Doe</td><td>1984-02-11</td></tr>
-<tr><td>25</td><td>5</td><td>The Rock</td><td>Doe</td><td>1992-05-13</td></tr>
+<tr><td>6</td><td>2</td><td>John</td><td>Doe2</td><td>1992-05-13</td></tr>
+<tr><td>7</td><td>2</td><td>James</td><td>Doe2</td><td>1984-02-11</td></tr>
+<tr><td>8</td><td>2</td><td>Josh</td><td>Doe2</td><td>1984-02-11</td></tr>
+<tr><td>9</td><td>2</td><td>Harry</td><td>Doe2</td><td>1984-02-11</td></tr>
+<tr><td>10</td><td>2</td><td>Mary</td><td>Doe2</td><td>1992-05-13</td></tr>
 </table>

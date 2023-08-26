@@ -36,7 +36,7 @@ export function Layout(props: { children: React.ReactNode, user: { userName?: st
         <>
             <AppShell
                 bg='#f3f5f7'
-                hidden={path === '/login' ? true : false}
+                hidden={['/login', '/tenant'].includes(path) ? true : false}
                 padding="md"
                 header={
                     <Header withBorder height={60} p="xs" bg='lightsteelblue' sx={{ borderBottom: '1px solid black' }}>
