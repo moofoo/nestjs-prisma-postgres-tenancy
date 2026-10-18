@@ -187,9 +187,3 @@ docker compose restart
 -   [Beginner's Guide](http://nginx.org/en/docs/beginners_guide.html)
 -   [Using the Forwarded Header](https://www.nginx.com/resources/wiki/start/topics/examples/forwarded/)
 -   [Full Config Example](https://www.nginx.com/resources/wiki/start/topics/examples/full/)
-
-#
-
-#
-
-**Please be aware that this is a "toy" app meant to demonstrate the given programming concepts/techniques. It does **NOT** implement security best-practices and isn't intended to be representative of production-ready code**
